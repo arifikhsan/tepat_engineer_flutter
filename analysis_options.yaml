@@ -1,4 +1,7 @@
 include: package:very_good_analysis/analysis_options.yaml
+analyzer:
+  exclude:
+    [lib/**.freezed.dart, lib/**.g.dart, lib/**.config.dart, lib/**.gr.dart, lib/test/helpers/pump_app.dart]
 linter:
   rules:
     public_member_api_docs: false

@@ -1,0 +1,70 @@
+name: production
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1.5.0
+
+      - name: Install Dependencies
+        run: flutter packages get
+
+      - name: Format
+        run: flutter format --set-exit-if-changed lib test
+        continue-on-error: true
+
+      - name: Analyze
+        run: flutter analyze lib test
+        continue-on-error: true
+
+      - name: Generate code
+        run: flutter packages pub run build_runner build --delete-conflicting-outputs
+
+      - name: Build debug flavor production
+        run: flutter build apk --debug --flavor production --target lib/main_production.dart
+
+      - name: Setup Keystore
+        env:
+          SIGNING_KEY: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          echo $SIGNING_KEY | base64 -di > android/app/key.jks
+          pwd
+          ls android/app
+
+      - name: build release
+        env:
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_PATH: key.jks
+        run: |
+          flutter build apk --release --flavor production --target lib/main_production.dart --target-platform android-arm64
+
+      - name: Rename APK
+        id: random-name-generator
+        run: |
+          last_commit_id=$(git rev-parse --short HEAD)
+          cd build/app/outputs/flutter-apk/
+          NEW_APK_NAME=app-production-release-${last_commit_id}.apk
+          cp app-production-release.apk $NEW_APK_NAME
+          echo "::set-output name=NEW_NAME::${NEW_APK_NAME}"
+
+      - name: Upload APK to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.SKYNET_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: '
+            New Release!!!
+            Commit name: ${{ github.event.head_commit.message }}'
+          document: ${{ github.workspace }}/build/app/outputs/flutter-apk/${{ steps.random-name-generator.outputs.NEW_NAME }}
