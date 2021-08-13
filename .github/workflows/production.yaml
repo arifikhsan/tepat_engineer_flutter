@@ -31,8 +31,7 @@ jobs:
         run: flutter packages pub run build_runner build --delete-conflicting-outputs
 
       - name: Build debug flavor production
-        run: flutter build apk --debug --flavor production --target lib/main_production.dart
-
+        run: flutter build apk --debug --flavor production
       - name: Setup Keystore
         env:
           SIGNING_KEY: ${{ secrets.ANDROID_KEYSTORE }}
@@ -48,7 +47,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEYSTORE_PATH: key.jks
         run: |
-          flutter build apk --release --flavor production --target lib/main_production.dart --target-platform android-arm64
+          flutter build apk --release --flavor production --target-platform android-arm64
 
       - name: Rename APK
         id: random-name-generator

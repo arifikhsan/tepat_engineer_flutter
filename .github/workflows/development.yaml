@@ -28,4 +28,4 @@ jobs:
         run: flutter packages pub run build_runner build --delete-conflicting-outputs
 
       - name: Build debug flavor development
-        run: flutter build apk --debug --flavor development --target lib/main_development.dart
+        run: flutter build apk --debug --flavor development
